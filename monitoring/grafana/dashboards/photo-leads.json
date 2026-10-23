@@ -9,7 +9,7 @@
   "timezone": "browser",
   "editable": true,
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "10s",
   "graphTooltip": 1,
   "time": {
@@ -471,7 +471,7 @@
             "uid": "loki"
           },
           "expr": "sum by (level) (count_over_time({app=\"$app\"}[$__range]))",
-          "queryType": "instant",
+          "queryType": "range",
           "editorMode": "code",
           "legendFormat": "{{level}}"
         }
@@ -587,7 +587,8 @@
           "mode": "single",
           "sort": "none"
         }
-      }
+      },
+      "maxDataPoints": 50
     },
     {
       "id": 8,
@@ -612,7 +613,7 @@
             "uid": "loki"
           },
           "expr": "sum by (lead_type) (count_over_time({app=\"$app\", event=\"lead_processed\"} | json [$__range]))",
-          "queryType": "instant",
+          "queryType": "range",
           "editorMode": "code",
           "legendFormat": "{{lead_type}}"
         }
@@ -652,7 +653,8 @@
           "mode": "single",
           "sort": "none"
         }
-      }
+      },
+      "maxDataPoints": 50
     },
     {
       "id": 9,
@@ -677,7 +679,7 @@
             "uid": "loki"
           },
           "expr": "sum by (source) (count_over_time({app=\"$app\", event=\"lead_processed\"} | json [$__range]))",
-          "queryType": "instant",
+          "queryType": "range",
           "editorMode": "code",
           "legendFormat": "{{source}}"
         }
@@ -717,7 +719,8 @@
           "mode": "single",
           "sort": "none"
         }
-      }
+      },
+      "maxDataPoints": 50
     },
     {
       "id": 10,
