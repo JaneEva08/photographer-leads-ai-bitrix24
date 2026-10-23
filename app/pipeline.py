@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -17,6 +18,7 @@ from . import privacy, rules
 from .ai import AIError, AIProvider, extract_json
 from .ai.prompts import calc_user_prompt, system_prompt, user_prompt
 from .bitrix import Bitrix24, BitrixError
+from .loki import log_event
 from .schemas import LABELS, NOT_SET, AIResult, CalcRequest, Card, LeadForm
 
 log = logging.getLogger(__name__)
@@ -38,7 +40,7 @@ def _analyze(ai: AIProvider, system: str, user: str) -> AIResult:
         try:
             return AIResult.model_validate(extract_json(raw))
         except (ValueError, ValidationError) as e:
-            log.warning("Невалидный ответ модели: %s", str(e)[:200])
+            log_event(log, "ai_bad_json", f"Невалидный ответ модели: {str(e)[:200]}", logging.WARNING)
             last_err = e
             prompt = (f"{user}\n\nПрошлый ответ не прошёл проверку: {str(e)[:300]}\n"
                       "Верни только корректный JSON строго по описанным полям.")
@@ -264,11 +266,13 @@ def _push_crm(b24: Bitrix24, name: str, phone: str, email: str, card: Card,
         )
     except BitrixError as e:
         crm["warnings"].append(f"задача не создана: {e}")
+        log_event(log, "crm_warning", f"Битрикс24: задача не создана: {e}", logging.WARNING)
     try:
         mark = "❗ " if card.needs_human else ""
         b24.notify(f"{mark}Новая заявка: {title}. {card.summary}")
     except BitrixError as e:
         crm["warnings"].append(f"уведомление не отправлено: {e}")
+        log_event(log, "crm_warning", f"Битрикс24: уведомление не отправлено: {e}", logging.WARNING)
     return crm
 
 
@@ -278,8 +282,19 @@ def _crm_safe(b24: Bitrix24 | None, *args, **kw) -> dict:
     try:
         return _push_crm(b24, *args, **kw)
     except BitrixError as e:
-        log.error("Битрикс24: %s", e)
+        log_event(log, "crm_error", f"Битрикс24: {e}", logging.ERROR)
         return {"status": "error", "message": f"В CRM не записано: {e}"}
+
+
+def _report(card: Card, crm: dict, started: float, pii_masked: int, **extra) -> None:
+    """Событие для мониторинга. Только категории и числа: ни текста заявки, ни имени, ни контактов."""
+    log_event(
+        log, "lead_processed", f"Заявка обработана: {card.source}, {card.lead_type}",
+        source=card.source, lead_type=card.lead_type, theme=card.theme, date_status=card.date_status,
+        needs_human=card.needs_human, human_reason=card.human_reason if card.needs_human else "",
+        crm=crm.get("status", "off"), crm_warnings=len(crm.get("warnings", [])),
+        pii_masked=pii_masked, ms=round((time.monotonic() - started) * 1000), **extra,
+    )
 
 
 def process(
@@ -292,6 +307,7 @@ def process(
     privacy_log: Path | None = None,
 ) -> Result:
     """Вход 1: заявка свободным текстом (мессенджер, форма, звонок)."""
+    started = time.monotonic()
     # 1. Маскировка: имя из формы ищем и в тексте, в любом падеже
     masked = privacy.anonymize(form.text, known_names=[form.name])
     name_token = privacy.add_token(masked, privacy.NAME, form.name.split()[0]) if form.name else None
@@ -311,6 +327,7 @@ def process(
 
     # 5. CRM — сбой не роняет обработку
     crm = _crm_safe(b24, form.name, form.phone, form.email, card, source_text=form.text)
+    _report(card, crm, started, sum(masked.counts().values()), ai="ok")
     return Result(card=card, masked_text=masked.text, crm=crm)
 
 
@@ -324,6 +341,8 @@ def process_calc(
     privacy_log: Path | None = None,
 ) -> tuple[Result, rules.Quote]:
     """Вход 2: заявка из калькулятора. Параметры уже структурированы — ИИ нужен только для комментария."""
+    started = time.monotonic()
+    pii_masked = 0
     p = req.params
     theme_key = prices.key_by_title(p.theme)
     if theme_key is None:
@@ -360,6 +379,7 @@ def process_calc(
         if privacy_log:
             privacy.log_masked(masked, privacy_log)
         masked_text, mapping = masked.text, masked.mapping
+        pii_masked = sum(masked.counts().values())
         summary_for_ai = (f"{q.title}, дата {fmt_date(p.date)}, {q.hours or 'базовый пакет'} ч"
                           + (", " + ", ".join(options) if options else ""))
         try:
@@ -367,7 +387,8 @@ def process_calc(
                               calc_user_prompt(summary_for_ai, masked.text, name_token))
         except AIError as e:
             # Сбой нейросети не должен терять заявку клиента: ведём по шаблону, комментарий уйдёт в CRM как есть
-            log.error("Комментарий из калькулятора не разобран: %s", e)
+            log_event(log, "ai_error", f"Комментарий из калькулятора не разобран: {e}", logging.ERROR,
+                      source="калькулятор")
             ai_failed = True
     elif req.comment:
         ai_failed = True
@@ -424,4 +445,6 @@ def process_calc(
     )
     card = Card.model_validate(privacy.restore_obj(card.model_dump(), mapping))
     crm = _crm_safe(b24, req.name, req.phone, req.email, card, quote=q, source_text=req.comment)
+    ai_state = "ok" if ai_res is not None else ("error" if ai_failed else "not_needed")
+    _report(card, crm, started, pii_masked, ai=ai_state, total=q.total)
     return Result(card=card, masked_text=masked_text, crm=crm), q

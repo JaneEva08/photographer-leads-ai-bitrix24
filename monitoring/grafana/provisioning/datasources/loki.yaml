@@ -1,0 +1,14 @@
+# Источник данных подключается сам при запуске Grafana: вручную в Connections добавлять не нужно.
+# Адрес — имя сервиса из docker-compose: контейнеры видят друг друга по именам в общей сети compose.
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    isDefault: true
+    editable: false
+    jsonData:
+      maxLines: 1000
