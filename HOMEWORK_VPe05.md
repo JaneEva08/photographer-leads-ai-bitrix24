@@ -33,7 +33,7 @@ docker compose ps         # loki и grafana — running
 
 ![Контейнеры запущены](docs/vpe05/1_docker_ps.png)
 
-Источник Loki: Connections → Data sources → Loki → **Save & test**.
+Источник Loki: Connections → Data sources → Loki → **Test** — «Data source successfully connected». Кнопка называется Test, а не Save & test: источник подключён из файла настроек и в интерфейсе не редактируется, сохранять нечего.
 
 ![Источник Loki подключён](docs/vpe05/2_datasource_test.png)
 
