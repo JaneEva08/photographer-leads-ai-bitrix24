@@ -1,0 +1,29 @@
+# секреты и окружение
+.env
+.env.*
+!.env.example
+certs/
+*.cer
+*.crt
+*.pem
+*.key
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# журналы: содержат маскированные тексты заявок
+logs/*
+!logs/.gitkeep
+
+# редакторы и система
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# скриншоты из CRM (могут содержать данные портала)
+screenshots/
