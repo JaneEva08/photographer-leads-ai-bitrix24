@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Рабочее место фотографа</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <nav class="nav"><a href="/">Калькулятор клиента</a><span aria-current="page">Рабочее место фотографа</span></nav>
+      <h1>Разбор заявок на съёмку</h1>
+      <p class="sub">Заявка → маскировка персональных данных → GigaChat → проверка даты и цены → Битрикс24</p>
+    </div>
+  </header>
+
+  <main class="wrap grid">
+    <section class="panel">
+      <h2>Заявка текстом</h2>
+      <p class="hint">Сообщение из мессенджера, письма или звонка — вставьте как есть.</p>
+      <div class="samples" id="samples" aria-label="Тестовые заявки"></div>
+      <form id="form" novalidate>
+        <label>Имя <input name="name" autocomplete="off" placeholder="Например, Анна"></label>
+        <div class="row">
+          <label>Телефон <input name="phone" autocomplete="off" placeholder="+7 900 000-00-00"></label>
+          <label>Email <input name="email" type="email" autocomplete="off" placeholder="test@example.com"></label>
+        </div>
+        <label>Текст заявки <textarea name="text" rows="7" placeholder="Что хочет клиент: тематика, дата, место, длительность, бюджет…"></textarea></label>
+        <p class="hint">Нужен текст и хотя бы один контакт. Только тестовые данные.</p>
+        <button type="submit" id="go">Обработать</button>
+        <p class="error" id="error" role="alert" hidden></p>
+      </form>
+
+      <div class="masked" id="maskedBox" hidden>
+        <h3>Что ушло в нейросеть <span class="tag">демо</span></h3>
+        <pre id="masked"></pre>
+      </div>
+    </section>
+
+    <section class="panel" id="result" aria-live="polite">
+      <div class="empty" id="empty">Здесь появится карточка заявки для фотографа.</div>
+      <div class="loading" id="loading" hidden><span class="spinner"></span>Разбираю заявку…</div>
+      <div id="card" hidden></div>
+    </section>
+  </main>
+
+  <script type="module" src="/static/admin.js"></script>
+</body>
+</html>

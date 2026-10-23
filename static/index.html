@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Расчёт фотосъёмки</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="client">
+  <header class="top">
+    <div class="wrap">
+      <nav class="nav" id="nav" hidden><span aria-current="page">Калькулятор клиента</span><a href="/admin">Рабочее место фотографа</a></nav>
+      <h1>Сколько стоит ваша съёмка</h1>
+      <p class="sub">Соберите съёмку, проверьте дату и оставьте заявку. Бронь и стоимость фотограф подтвердит лично.</p>
+      <ol class="steps" id="steps">
+        <li class="on">Расчёт</li><li>Проверка</li><li>Готово</li>
+      </ol>
+    </div>
+  </header>
+
+  <main class="wrap calc">
+    <!-- Шаг 1. Расчёт -->
+    <section id="step1" class="cgrid">
+      <div class="panel">
+        <h2>Что снимаем</h2>
+        <div class="themes" id="themes" role="radiogroup" aria-label="Тематика"></div>
+
+        <h2>Когда</h2>
+        <label class="inline">Дата съёмки <input type="date" id="date"></label>
+        <p class="datestatus" id="datestatus" aria-live="polite"></p>
+
+        <h2>Сколько по времени</h2>
+        <div class="stepper" data-field="hours">
+          <button type="button" data-d="-0.5" aria-label="Меньше">−</button>
+          <output id="hoursOut">1 ч</output>
+          <button type="button" data-d="0.5" aria-label="Больше">+</button>
+        </div>
+        <p class="muted small" id="hoursHint"></p>
+
+        <h2>Дополнительно</h2>
+        <div class="opts">
+          <label class="opt"><input type="checkbox" id="out_of_town"><span>Выезд за город <em id="pOut"></em></span></label>
+          <label class="opt"><input type="checkbox" id="urgent"><span>Срочная обработка за 7 дней <em id="pUrg"></em></span></label>
+          <label class="opt" id="secondWrap" hidden><input type="checkbox" id="second"><span>Второй фотограф <em id="pSec"></em></span></label>
+          <div class="opt">
+            <span>Дополнительные кадры в ретушь <em id="pFr"></em></span>
+            <div class="stepper small" data-field="frames">
+              <button type="button" data-d="-5" aria-label="Меньше">−</button>
+              <output id="framesOut">0</output>
+              <button type="button" data-d="5" aria-label="Больше">+</button>
+            </div>
+          </div>
+        </div>
+        <p class="muted small" id="discHint"></p>
+      </div>
+
+      <aside class="panel sticky" id="summary">
+        <h2>Ваш расчёт</h2>
+        <div id="breakdown"></div>
+        <p class="note">Стоимость предварительная. Окончательную фотограф подтвердит после заявки.</p>
+        <button type="button" class="primary" id="toStep2" disabled>Оставить заявку</button>
+      </aside>
+    </section>
+
+    <!-- Шаг 2. Проверка -->
+    <section id="step2" class="cgrid" hidden>
+      <div class="panel">
+        <h2>Проверьте заявку</h2>
+        <dl class="recap" id="recap"></dl>
+        <h2>Как с вами связаться</h2>
+        <form id="contact" novalidate>
+          <label>Имя <input name="name" autocomplete="name" placeholder="Как к вам обращаться"></label>
+          <div class="row">
+            <label>Телефон <input name="phone" type="tel" autocomplete="tel" placeholder="+7 900 000-00-00"></label>
+            <label>Email <input name="email" type="email" autocomplete="email" placeholder="test@example.com"></label>
+          </div>
+          <label>Комментарий <textarea name="comment" rows="4" placeholder="Пожелания, референсы, вопросы — по желанию"></textarea></label>
+          <label class="check"><input type="checkbox" name="consent"> Согласен(на) на обработку персональных данных для связи по заявке</label>
+          <label class="check"><input type="checkbox" name="portfolio_consent"> Можно использовать кадры в портфолио фотографа</label>
+          <p class="error" id="error" role="alert" hidden></p>
+          <div class="actions">
+            <button type="button" class="ghost" id="back">← Изменить расчёт</button>
+            <button type="submit" class="primary" id="send">Отправить заявку</button>
+          </div>
+        </form>
+      </div>
+      <aside class="panel sticky">
+        <h2>Итого</h2>
+        <div id="breakdown2"></div>
+        <p class="note">Это заявка, а не оплата. Фотограф проверит дату и подтвердит стоимость.</p>
+      </aside>
+    </section>
+
+    <!-- Шаг 3. Готово -->
+    <section id="step3" hidden>
+      <div class="panel done">
+        <div class="tick" aria-hidden="true">✓</div>
+        <h2>Заявка отправлена</h2>
+        <p id="doneMsg"></p>
+        <p class="muted" id="doneRecap"></p>
+        <button type="button" class="ghost" id="again">Новый расчёт</button>
+      </div>
+      <div id="demo" hidden>
+        <h2 class="demo-h">Как заявку увидит фотограф <span class="tag">демо</span></h2>
+        <div class="masked" id="maskedBox" hidden>
+          <h3>Что ушло в нейросеть</h3>
+          <pre id="masked"></pre>
+        </div>
+        <div class="panel" id="card"></div>
+      </div>
+    </section>
+  </main>
+
+  <a class="mobilebar" id="mobilebar" href="#summary" hidden><span>Итого</span><strong id="mobileTotal"></strong><span>к расчёту ↓</span></a>
+
+  <script type="module" src="/static/calc.js"></script>
+</body>
+</html>
