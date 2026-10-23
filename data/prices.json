@@ -1,0 +1,73 @@
+{
+  "_note": "Синтетический прайс учебного примера. Под конкретного фотографа меняется только этот файл.",
+  "currency": "RUB",
+  "themes": {
+    "individual": {
+      "title": "Индивидуальная фотосессия",
+      "base_hours": 1.0,
+      "base_price": 6000,
+      "retouch": 25,
+      "extra_hour": 4500,
+      "full_day": false
+    },
+    "family": {
+      "title": "Семейная фотосессия",
+      "base_hours": 1.0,
+      "base_price": 7000,
+      "retouch": 30,
+      "extra_hour": 5000,
+      "full_day": false
+    },
+    "kids": {
+      "title": "Детская фотосессия",
+      "base_hours": 1.0,
+      "base_price": 6500,
+      "retouch": 30,
+      "extra_hour": 5000,
+      "full_day": false
+    },
+    "love_story": {
+      "title": "Love story",
+      "base_hours": 1.5,
+      "base_price": 9000,
+      "retouch": 35,
+      "extra_hour": 5000,
+      "full_day": false
+    },
+    "wedding": {
+      "title": "Свадьба",
+      "base_hours": 4.0,
+      "base_price": 40000,
+      "retouch": 80,
+      "extra_hour": 7000,
+      "full_day": true
+    },
+    "event": {
+      "title": "Мероприятие",
+      "base_hours": 2.0,
+      "base_price": 10000,
+      "retouch": 40,
+      "extra_hour": 5000,
+      "full_day": true
+    }
+  },
+  "extras": {
+    "out_of_town": 2000,
+    "urgent_percent": 30,
+    "extra_retouch_frame": 300,
+    "second_photographer_hour": 2500,
+    "studio_note": "Аренда студии оплачивается клиентом отдельно."
+  },
+  "rules": {
+    "max_sessions_per_day": 3,
+    "low_budget_ratio": 0.7,
+    "max_hours": 14
+  },
+  "discounts": {
+    "weekday_percent": 10,
+    "early_wedding_percent": 5,
+    "early_wedding_days": 180,
+    "max_auto_percent": 15,
+    "max_personal_percent": 30
+  }
+}
