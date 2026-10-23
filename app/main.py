@@ -33,6 +33,9 @@ from .schemas import LABELS, CalcParams, CalcRequest, LeadForm, ManagerParams
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("app")
+# httpx на уровне INFO печатает адрес каждого запроса, а в адресе вебхука Битрикс24 лежит его секретный ключ.
+# Ошибки (WARNING и выше) остаются; свои сообщения об ошибках CRM мы пишем без адреса.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 # LOKI_URL пуст — отправки в Loki нет, всё как раньше
 _loki = setup_loki(settings.loki_url, {"app": settings.loki_app, "env": settings.loki_env})
 

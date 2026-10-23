@@ -195,3 +195,9 @@ def test_bad_input_logged_as_warning(caplog):
     assert _events(caplog, "app_started")
     [rec] = _events(caplog, "bad_input")
     assert rec.levelno == logging.WARNING
+
+
+def test_webhook_url_not_printed_to_console():
+    """В адресе вебхука Битрикс24 — секретный ключ: httpx не должен печатать адреса запросов."""
+    from app import main  # noqa: F401 — уровень логгера настраивается при импорте
+    assert logging.getLogger("httpx").getEffectiveLevel() >= logging.WARNING
