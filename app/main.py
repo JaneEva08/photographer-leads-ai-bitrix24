@@ -26,12 +26,18 @@ from .ai import AIError
 from .ai.gigachat import GigaChatProvider
 from .bitrix import Bitrix24, BitrixError
 from .config import settings
+from .loki import log_event, setup_loki
 from .pipeline import fmt_date, process, process_calc, reply_block
 from .samples import SAMPLES
 from .schemas import LABELS, CalcParams, CalcRequest, LeadForm, ManagerParams
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("app")
+# httpx на уровне INFO печатает адрес каждого запроса, а в адресе вебхука Битрикс24 лежит его секретный ключ.
+# Ошибки (WARNING и выше) остаются; свои сообщения об ошибках CRM мы пишем без адреса.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+# LOKI_URL пуст — отправки в Loki нет, всё как раньше
+_loki = setup_loki(settings.loki_url, {"app": settings.loki_app, "env": settings.loki_env})
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
 
@@ -98,7 +104,13 @@ def check_webhook() -> None:
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     check_webhook()
+    log_event(log, "app_started", "Приложение запущено", gigachat_key=bool(settings.gigachat_credentials),
+              bitrix24=bool(settings.b24_url), demo_mode=settings.demo_mode, loki=bool(_loki))
     yield
+    if _loki is not None:
+        log_event(log, "app_stopped", "Приложение остановлено")
+        logging.getLogger().removeHandler(_loki)
+        _loki.close()
 
 
 app = FastAPI(title="ИИ-разбор заявок фотографа", lifespan=lifespan)
@@ -111,6 +123,8 @@ def _bad(e: ValidationError | ValueError) -> JSONResponse:
         msg = str(err.get("msg", "Неверные данные")).removeprefix("Value error, ")
     else:
         msg = str(e)
+    # текст ошибки — наш, без ввода пользователя: pydantic не кладёт значение поля в msg
+    log_event(log, "bad_input", f"Неверные данные: {msg}", logging.WARNING)
     return JSONResponse({"error": msg}, status_code=422)
 
 
@@ -179,7 +193,8 @@ async def calc_request(request: Request):
         try:
             ai = get_ai()
         except AIError as e:
-            log.error("GigaChat недоступен, комментарий уйдёт в CRM без разбора: %s", e)
+            log_event(log, "ai_error", f"GigaChat недоступен, комментарий уйдёт в CRM без разбора: {e}",
+                      logging.ERROR, source="калькулятор")
     try:
         # синхронные вызовы GigaChat и Битрикс24 — в потоке, чтобы не блокировать остальные запросы
         result, q = await asyncio.to_thread(
@@ -219,6 +234,7 @@ async def process_lead(request: Request):
                             today=today(), b24=get_b24(), privacy_log=settings.privacy_log))
     except AIError as e:
         _state.pop("ai", None)
+        log_event(log, "ai_error", f"Заявка не разобрана: {e}", logging.ERROR, source="текст")
         raise HTTPException(status_code=502, detail=str(e))
     body = {"card": result.card.model_dump(), "crm": result.crm}
     if settings.demo_mode:
@@ -262,7 +278,10 @@ async def manager_save(request: Request):
         await asyncio.to_thread(b24.update_lead_amount, req.lead_id, q.total)
         await asyncio.to_thread(b24.add_lead_comment, req.lead_id, text)
     except BitrixError as e:
+        log_event(log, "crm_error", f"Пересчёт не сохранён в Битрикс24: {e}", logging.ERROR)
         return JSONResponse({"error": f"Не сохранено в Битрикс24: {e}"}, status_code=502)
+    log_event(log, "manager_saved", "Фотограф сохранил пересчёт в лид", total=q.total,
+              personal_discount=req.params.personal_discount > 0)
     return {"status": "ok", "total": q.total}
 
 

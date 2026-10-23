@@ -1,0 +1,54 @@
+# Мониторинг: Loki (хранит логи) + Grafana (показывает дашборд).
+# Запуск из этой папки:  docker compose up -d
+# Grafana: http://localhost:3000 (логин admin, пароль из monitoring/.env)
+# Приложение шлёт логи на http://localhost:3100/loki/api/v1/push (LOKI_URL в корневом .env)
+#
+# Порты привязаны к 127.0.0.1: снаружи компьютера или сервера Loki и Grafana не видны.
+# На сервере Grafana открывают через nginx с HTTPS или через SSH-туннель, а Loki наружу не открывают вовсе:
+# без авторизации кто угодно мог бы писать в него и читать логи.
+
+name: photo-leads-monitoring
+
+services:
+  loki:
+    image: grafana/loki:3.7.9
+    container_name: loki
+    command: -config.file=/etc/loki/config.yaml
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./loki/config.yaml:/etc/loki/config.yaml:ro
+      - loki-data:/loki
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.4.13
+    container_name: grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      # пароль берётся из monitoring/.env и применяется только при первом запуске (пустой том)
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Задайте GRAFANA_ADMIN_PASSWORD в monitoring/.env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # не отправлять статистику использования в Grafana Labs
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/photo-leads.json
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+# Именованные тома, а не папки рядом (./loki): образ Loki работает не от root,
+# и в примонтированную папку с Windows или Linux-хоста он часто не может писать.
+# Внимание: docker compose down -v удалит тома, то есть все логи и настройки Grafana.
+volumes:
+  loki-data:
+  grafana-data:

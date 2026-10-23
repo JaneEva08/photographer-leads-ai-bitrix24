@@ -1,0 +1,13 @@
+# Дашборды из папки monitoring/grafana/dashboards загружаются при запуске Grafana.
+# Правки в интерфейсе разрешены, но при перезапуске файл главнее: чтобы сохранить правку,
+# экспортируйте дашборд в JSON (Share → Export) и замените файл.
+apiVersion: 1
+
+providers:
+  - name: photo-leads
+    folder: Мониторинг
+    type: file
+    allowUiUpdates: true
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/dashboards

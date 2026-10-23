@@ -27,6 +27,9 @@ class Settings:
     app_today: str = os.getenv("APP_TODAY", "").strip()
     demo_mode: bool = _bool("DEMO_MODE", False)
     privacy_log: Path = ROOT / os.getenv("PRIVACY_LOG", "logs/privacy_log.csv")
+    loki_url: str = os.getenv("LOKI_URL", "").strip()
+    loki_app: str = os.getenv("LOKI_APP", "photo-leads-ai").strip() or "photo-leads-ai"
+    loki_env: str = os.getenv("LOKI_ENV", "local").strip() or "local"
 
 
 settings = Settings()
